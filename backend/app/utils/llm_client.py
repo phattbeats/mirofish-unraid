@@ -1,17 +1,21 @@
 """
 LLM Client Wrapper
-Supports both OpenAI and Anthropic (Claude) APIs
+Supports OpenAI API, Anthropic API, Claude CLI, and Codex CLI
 """
 
 import json
 import re
+import subprocess
 from typing import Optional, Dict, Any, List
 
 from ..config import Config
+from .logger import get_logger
+
+logger = get_logger('mirofish.llm_client')
 
 
 class LLMClient:
-    """LLM Client - supports OpenAI-compatible and Anthropic APIs"""
+    """LLM Client - supports OpenAI, Anthropic, Claude CLI, and Codex CLI"""
 
     def __init__(
         self,
@@ -25,7 +29,10 @@ class LLMClient:
         self.model = model or Config.LLM_MODEL_NAME
         self.provider = (provider or Config.LLM_PROVIDER or "").lower()
 
-        if not self.api_key:
+        # CLI providers don't need an API key
+        if self.provider in ("claude-cli", "codex-cli"):
+            self.client = None
+        elif not self.api_key:
             raise ValueError("LLM_API_KEY not configured")
 
         # Auto-detect provider if not specified
@@ -42,6 +49,8 @@ class LLMClient:
                     "Install with: pip install anthropic"
                 )
             self.client = Anthropic(api_key=self.api_key)
+        elif self.provider in ("claude-cli", "codex-cli"):
+            self.client = None  # CLI-based, no SDK client needed
         else:
             from openai import OpenAI
             self.client = OpenAI(
@@ -54,19 +63,16 @@ class LLMClient:
         model_lower = (self.model or "").lower()
         base_lower = (self.base_url or "").lower()
 
-        # Anthropic detection
         if any(k in model_lower for k in ["claude", "anthropic"]):
             return "anthropic"
         if "anthropic" in base_lower:
             return "anthropic"
 
-        # Default to OpenAI-compatible
         return "openai"
 
     def _split_system_message(self, messages: List[Dict[str, str]]):
         """
         Split system message from conversation messages.
-        Anthropic requires system as a separate parameter.
         Returns (system_text, conversation_messages)
         """
         system_text = None
@@ -102,12 +108,16 @@ class LLMClient:
             messages: Message list
             temperature: Temperature parameter
             max_tokens: Maximum tokens
-            response_format: Response format (e.g., JSON mode, OpenAI only)
+            response_format: Response format (e.g., JSON mode)
 
         Returns:
             Model response text
         """
-        if self.provider == "anthropic":
+        if self.provider == "claude-cli":
+            return self._chat_claude_cli(messages, temperature, max_tokens, response_format)
+        elif self.provider == "codex-cli":
+            return self._chat_codex_cli(messages, temperature, max_tokens, response_format)
+        elif self.provider == "anthropic":
             return self._chat_anthropic(messages, temperature, max_tokens, response_format)
         else:
             return self._chat_openai(messages, temperature, max_tokens, response_format)
@@ -144,7 +154,6 @@ class LLMClient:
         """Chat via Anthropic API"""
         system_text, conversation = self._split_system_message(messages)
 
-        # If JSON format requested, add instruction to system prompt
         if response_format and response_format.get("type") == "json_object":
             json_instruction = "\n\nIMPORTANT: You must respond with valid JSON only. No markdown, no explanation, just pure JSON."
             if system_text:
@@ -165,6 +174,110 @@ class LLMClient:
         response = self.client.messages.create(**kwargs)
         content = response.content[0].text
         return self._clean_content(content)
+
+    def _chat_claude_cli(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float,
+        max_tokens: int,
+        response_format: Optional[Dict] = None
+    ) -> str:
+        """Chat via Claude Code CLI (uses your Claude subscription)"""
+        system_text, conversation = self._split_system_message(messages)
+
+        # Build the prompt from messages
+        prompt_parts = []
+        if system_text:
+            prompt_parts.append(f"SYSTEM INSTRUCTIONS:\n{system_text}\n")
+
+        if response_format and response_format.get("type") == "json_object":
+            prompt_parts.append("IMPORTANT: Respond with valid JSON only. No markdown, no explanation, just pure JSON.\n")
+
+        for msg in conversation:
+            role = msg.get("role", "user").upper()
+            prompt_parts.append(f"{role}: {msg['content']}")
+
+        prompt = "\n\n".join(prompt_parts)
+
+        try:
+            result = subprocess.run(
+                ["claude", "-p", "--output-format", "json", prompt],
+                capture_output=True, text=True, timeout=120,
+                cwd="/tmp"
+            )
+
+            if result.returncode != 0:
+                logger.error(f"Claude CLI error: {result.stderr[:200]}")
+                raise RuntimeError(f"Claude CLI failed: {result.stderr[:200]}")
+
+            # Parse JSON output to extract the result text
+            try:
+                output = json.loads(result.stdout)
+                content = output.get("result", result.stdout)
+            except json.JSONDecodeError:
+                content = result.stdout.strip()
+
+            return self._clean_content(content)
+
+        except subprocess.TimeoutExpired:
+            raise RuntimeError("Claude CLI timed out after 120s")
+
+    def _chat_codex_cli(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float,
+        max_tokens: int,
+        response_format: Optional[Dict] = None
+    ) -> str:
+        """Chat via Codex CLI (uses your OpenAI subscription)"""
+        system_text, conversation = self._split_system_message(messages)
+
+        # Build the prompt
+        prompt_parts = []
+        if system_text:
+            prompt_parts.append(f"SYSTEM INSTRUCTIONS:\n{system_text}\n")
+
+        if response_format and response_format.get("type") == "json_object":
+            prompt_parts.append("IMPORTANT: Respond with valid JSON only. No markdown, no explanation, just pure JSON.\n")
+
+        for msg in conversation:
+            role = msg.get("role", "user").upper()
+            prompt_parts.append(f"{role}: {msg['content']}")
+
+        prompt = "\n\n".join(prompt_parts)
+
+        try:
+            result = subprocess.run(
+                ["codex", "exec", "--skip-git-repo-check", prompt],
+                capture_output=True, text=True, timeout=180,
+                cwd="/tmp"
+            )
+
+            if result.returncode != 0:
+                logger.error(f"Codex CLI error: {result.stderr[:200]}")
+                raise RuntimeError(f"Codex CLI failed: {result.stderr[:200]}")
+
+            # Codex exec outputs headers + conversation. Extract the last assistant response.
+            raw = result.stdout.strip()
+            # Find content after the last "codex\n" marker (the assistant response)
+            parts = raw.split("\ncodex\n")
+            if len(parts) > 1:
+                # Get the response, strip trailing token counts
+                content = parts[-1].strip()
+                # Remove trailing "tokens used\nN\n..." lines
+                lines = content.split("\n")
+                clean_lines = []
+                for line in lines:
+                    if line.strip() == "tokens used":
+                        break
+                    clean_lines.append(line)
+                content = "\n".join(clean_lines).strip()
+            else:
+                content = raw
+            return self._clean_content(content)
+
+        except subprocess.TimeoutExpired:
+            raise RuntimeError("Codex CLI timed out after 180s")
 
     def chat_json(
         self,
@@ -198,4 +311,4 @@ class LLMClient:
         try:
             return json.loads(cleaned_response)
         except json.JSONDecodeError:
-            raise ValueError(f"Invalid JSON returned by LLM: {cleaned_response}")
+            raise ValueError(f"Invalid JSON returned by LLM: {cleaned_response[:500]}")

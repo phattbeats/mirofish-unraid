@@ -28,10 +28,10 @@ class Config:
     JSON_AS_ASCII = False
 
     # LLM config
-    LLM_API_KEY = os.environ.get('LLM_API_KEY')
+    LLM_API_KEY = os.environ.get('LLM_API_KEY', '')
     LLM_BASE_URL = os.environ.get('LLM_BASE_URL', 'https://api.openai.com/v1')
     LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', 'gpt-4o-mini')
-    LLM_PROVIDER = os.environ.get('LLM_PROVIDER', '')  # 'openai', 'anthropic', or auto-detect
+    LLM_PROVIDER = os.environ.get('LLM_PROVIDER', '')  # 'openai', 'anthropic', 'claude-cli', 'codex-cli'
 
     # Graph database config (KuzuDB - local embedded graph database)
     GRAPH_DB_PATH = os.environ.get('GRAPH_DB_PATH', os.path.join(os.path.dirname(__file__), '../data/graphdb'))
@@ -68,6 +68,7 @@ class Config:
     def validate(cls):
         """Validate required configuration"""
         errors = []
-        if not cls.LLM_API_KEY:
-            errors.append("LLM_API_KEY not configured")
+        # CLI providers don't need an API key
+        if cls.LLM_PROVIDER not in ('claude-cli', 'codex-cli') and not cls.LLM_API_KEY:
+            errors.append("LLM_API_KEY not configured (set LLM_PROVIDER=claude-cli to use CLI instead)")
         return errors
