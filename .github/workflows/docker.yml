@@ -25,5 +25,5 @@ jobs:
           context: .
           push: true
           tags: |
-            mirofish-unraid:latest
-            mirofish-unraid:${{ github.sha }}
+            therealphatt/mirofish-unraid:latest
+            therealphatt/mirofish-unraid:${{ github.sha }}
