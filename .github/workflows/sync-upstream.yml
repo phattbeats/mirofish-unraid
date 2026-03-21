@@ -1,0 +1,29 @@
+name: Sync from upstream
+
+on:
+  schedule:
+    # Runs every Monday at 6 AM
+    - cron: '0 10 * * 1'
+  workflow_dispatch:  # Also lets you trigger manually
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/amadad/mirofish.git
+
+      - name: Fetch upstream
+        run: git fetch upstream
+
+      - name: Merge upstream/main
+        run: |
+          git checkout main
+          git merge upstream/main --no-edit
+          git push
