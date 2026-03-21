@@ -9,7 +9,7 @@ from flask import request, jsonify, send_file
 from . import simulation_bp
 from ..config import Config
 from ..core.workbench_session import WorkbenchSession
-from ..services.kuzu_entity_reader import KuzuEntityReader
+from ..services.entity_reader import EntityReader
 from ..services.oasis_profile_generator import OasisProfileGenerator
 from ..services.simulation_manager import SimulationManager, SimulationStatus
 from ..services.simulation_runner import SimulationRunner, RunnerStatus
@@ -64,7 +64,7 @@ def get_graph_entities(graph_id: str):
 
         logger.info(f"Fetching graph entities: graph_id={graph_id}, entity_types={entity_types}, enrich={enrich}")
         
-        reader = KuzuEntityReader()
+        reader = EntityReader()
         result = reader.filter_defined_entities(
             graph_id=graph_id,
             defined_entity_types=entity_types,
@@ -89,7 +89,7 @@ def get_entity_detail(graph_id: str, entity_uuid: str):
     """Get detailed information for a single entity"""
     try:
         
-        reader = KuzuEntityReader()
+        reader = EntityReader()
         entity = reader.get_entity_with_context(graph_id, entity_uuid)
         
         if not entity:
@@ -118,7 +118,7 @@ def get_entities_by_type(graph_id: str, entity_type: str):
         
         enrich = request.args.get('enrich', 'true').lower() == 'true'
         
-        reader = KuzuEntityReader()
+        reader = EntityReader()
         entities = reader.get_entities_by_type(
             graph_id=graph_id,
             entity_type=entity_type,
@@ -1000,7 +1000,7 @@ def generate_profiles():
         use_llm = data.get('use_llm', True)
         platform = data.get('platform', 'reddit')
         
-        reader = KuzuEntityReader()
+        reader = EntityReader()
         filtered = reader.filter_defined_entities(
             graph_id=graph_id,
             defined_entity_types=entity_types,

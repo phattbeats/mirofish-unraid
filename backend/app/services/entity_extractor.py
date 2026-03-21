@@ -7,6 +7,7 @@ Uses the configured LLM to extract entities and relationships from text chunks.
 import json
 from typing import Dict, Any, List, Optional
 
+from .graph_storage import GraphStorage
 from ..utils.llm_client import LLMClient
 from ..utils.logger import get_logger
 
@@ -54,8 +55,13 @@ class EntityExtractor:
     Designed to replace the old managed automatic entity extraction pipeline.
     """
 
-    def __init__(self, llm_client: Optional[LLMClient] = None):
+    def __init__(
+        self,
+        llm_client: Optional[LLMClient] = None,
+        storage: Optional[GraphStorage] = None,
+    ):
         self.llm = llm_client or LLMClient()
+        self.storage = storage
 
     def extract(
         self,

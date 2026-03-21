@@ -13,6 +13,7 @@ from flask import Flask, request, send_from_directory
 from flask_cors import CORS
 
 from .config import Config
+from .services.graph_storage import JSONStorage, KuzuDBStorage
 from .utils.logger import setup_logger, get_logger
 
 
@@ -42,12 +43,19 @@ def create_app(config_class=Config):
     
     # Enable CORS
     CORS(app, resources={r"/api/*": {"origins": app.config.get('CORS_ORIGINS', [])}})
+
+    storage_backend = app.config.get("GRAPH_BACKEND", "kuzu")
+    if storage_backend == "json":
+        app.extensions["graph_storage"] = JSONStorage(data_dir=app.config["DATA_DIR"])
+    else:
+        app.extensions["graph_storage"] = KuzuDBStorage(db_path=app.config["KUZU_DB_PATH"])
     
     # Register simulation process cleanup (ensure all simulation processes are terminated on server shutdown)
     from .services.simulation_runner import SimulationRunner
     SimulationRunner.register_cleanup()
     if should_log_startup:
         logger.info("Simulation process cleanup registered")
+        logger.info("Graph storage backend: %s", type(app.extensions["graph_storage"]).__name__)
     
     # Request logging middleware
     @app.before_request
@@ -97,4 +105,3 @@ def create_app(config_class=Config):
         logger.info("MiroFish Backend started successfully")
     
     return app
-

@@ -4,6 +4,7 @@ Uses project context mechanism with server-side persistent state
 """
 
 import os
+from typing import Optional
 from flask import request, jsonify
 
 from . import graph_bp
@@ -24,6 +25,21 @@ def allowed_file(filename: str) -> bool:
         return False
     ext = os.path.splitext(filename)[1].lower().lstrip('.')
     return ext in Config.ALLOWED_EXTENSIONS
+
+
+def _resolve_graph_id(graph_id: Optional[str] = None) -> Optional[str]:
+    """Resolve a graph_id from the request or the most recent built project."""
+    if graph_id:
+        return graph_id
+
+    query_graph_id = request.args.get("graph_id")
+    if query_graph_id:
+        return query_graph_id
+
+    for project in ProjectManager.list_projects(limit=50):
+        if project.graph_id:
+            return project.graph_id
+    return None
 
 
 # ============== Project Management API ==============
@@ -234,6 +250,42 @@ def list_tasks():
         "success": True,
         "data": [t.to_dict() for t in tasks],
         "count": len(tasks)
+    })
+
+
+@graph_bp.route('/nodes', methods=['GET'])
+def list_graph_nodes():
+    """Compatibility endpoint for listing graph nodes."""
+    graph_id = _resolve_graph_id()
+    if not graph_id:
+        return jsonify({"success": True, "data": [], "count": 0, "graph_id": None})
+
+    builder = GraphBuilderService()
+    graph_data = builder.get_graph_data(graph_id)
+    nodes = graph_data.get("nodes", [])
+    return jsonify({
+        "success": True,
+        "data": nodes,
+        "count": len(nodes),
+        "graph_id": graph_id,
+    })
+
+
+@graph_bp.route('/edges', methods=['GET'])
+def list_graph_edges():
+    """Compatibility endpoint for listing graph edges."""
+    graph_id = _resolve_graph_id()
+    if not graph_id:
+        return jsonify({"success": True, "data": [], "count": 0, "graph_id": None})
+
+    builder = GraphBuilderService()
+    graph_data = builder.get_graph_data(graph_id)
+    edges = graph_data.get("edges", [])
+    return jsonify({
+        "success": True,
+        "data": edges,
+        "count": len(edges),
+        "graph_id": graph_id,
     })
 
 

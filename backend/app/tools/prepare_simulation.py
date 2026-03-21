@@ -9,7 +9,7 @@ from ..models.project import ProjectManager
 from ..resources.documents import DocumentStore
 from ..resources.projects import ProjectStore
 from ..resources.simulations import SimulationStore
-from ..services.kuzu_entity_reader import KuzuEntityReader
+from ..services.entity_reader import EntityReader
 from ..services.simulation_manager import SimulationStatus
 from ..utils.logger import get_logger
 from .simulation_support import check_simulation_prepared
@@ -90,7 +90,7 @@ class PrepareSimulationTool:
             ) or session
 
         try:
-            reader = KuzuEntityReader()
+            reader = EntityReader()
             filtered_preview = reader.filter_defined_entities(
                 graph_id=state.graph_id,
                 defined_entity_types=entity_types,

@@ -4,7 +4,7 @@ A swarm intelligence prediction engine. Upload documents describing any scenario
 
 **Live:** [synth.scty.org](https://synth.scty.org)
 
-> Fork of [666ghj/MiroFish](https://github.com/666ghj/MiroFish) — fully translated to English, local KuzuDB graph storage, Claude/Codex CLI support added.
+> Fork of [666ghj/MiroFish](https://github.com/666ghj/MiroFish) — fully translated to English, local graph storage with embedded KuzuDB by default, Claude/Codex CLI support added.
 
 ## What it does
 
@@ -85,12 +85,13 @@ backend/
     resources/     Adapters for projects, documents, Kuzu, simulations, reports
     tools/         Composable workbench operations (ingest, build, prepare, run, report)
     services/
-      graph_db.py          KuzuDB-backed knowledge graph
+      graph_storage.py     GraphStorage abstraction + KuzuDB/JSON backends
+      graph_db.py          Compatibility facade over per-graph storage backends
       entity_extractor.py  LLM-based entity/relationship extraction
       graph_builder.py     Ontology → graph pipeline
       simulation_runner.py OASIS multi-agent simulation (subprocess)
       report_agent.py      ReACT agent with tool-calling for reports
-      kuzu_tools.py        Search, interview, and analysis tools
+      graph_tools.py       Search, interview, and analysis tools
     utils/
       llm_client.py        Multi-provider LLM client (OpenAI/Anthropic/CLI)
   scripts/         OASIS simulation runner scripts (Twitter + Reddit)
@@ -103,7 +104,7 @@ The backend is being refactored toward a pi-style shape: one workbench session c
 ## How the pipeline works
 
 ```
-Document upload → LLM ontology extraction → Knowledge graph (KuzuDB)
+Document upload → LLM ontology extraction → Knowledge graph (GraphStorage → KuzuDB by default)
     → Entity filtering → Agent persona generation (LLM)
     → OASIS dual-platform simulation (Twitter + Reddit subprocess)
     → Graph memory updates → Report generation (ReACT agent)
