@@ -173,19 +173,12 @@ def get_generate_status():
                     }
                 })
         
-        if not task_id:
-            return jsonify({
-                "success": False,
-                "error": "Please provide task_id, simulation_id, or report_id"
-            }), 400
-        
-        task_manager = TaskManager()
-        task = task_manager.get_task(task_id)
-        
+        task = _find_report_task(task_id=task_id, simulation_id=simulation_id, report_id=report_id)
+
         if not task:
             return jsonify({
                 "success": False,
-                "error": f"Task not found: {task_id}"
+                "error": "Report generation task not found"
             }), 404
         
         return jsonify({

@@ -43,6 +43,37 @@ else:
     load_dotenv(override=True)
 
 
+def _get_bool_env(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def _get_cors_origins():
+    raw = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173')
+    if raw.strip() == '*':
+        return '*'
+    return [origin.strip() for origin in raw.split(',') if origin.strip()]
+
+
+def _get_llm_api_key() -> str:
+    explicit = os.environ.get('LLM_API_KEY', '')
+    if explicit:
+        return explicit
+
+    provider = (os.environ.get('LLM_PROVIDER', '') or '').strip().lower()
+    if provider == 'anthropic':
+        return os.environ.get('ANTHROPIC_API_KEY', '')
+
+    return os.environ.get('OPENAI_API_KEY', '') or os.environ.get('ANTHROPIC_API_KEY', '')
+
+
+def _get_env_or_default(name: str, default: str) -> str:
+    value = os.environ.get(name)
+    return value if value not in (None, '') else default
+
+
 class Config:
     """Flask configuration class."""
 
@@ -55,10 +86,10 @@ class Config:
     JSON_AS_ASCII = False
 
     # LLM config
-    LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
-    LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://api.openai.com/v1")
-    LLM_MODEL_NAME = os.environ.get("LLM_MODEL_NAME", "gpt-4o-mini")
-    LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "")
+    LLM_API_KEY = _get_llm_api_key()
+    LLM_BASE_URL = _get_env_or_default('LLM_BASE_URL', 'https://api.openai.com/v1')
+    LLM_MODEL_NAME = _get_env_or_default('LLM_MODEL_NAME', 'gpt-4o-mini')
+    LLM_PROVIDER = os.environ.get('LLM_PROVIDER', '')  # 'openai', 'anthropic', 'claude-cli', 'codex-cli'
 
     # Graph storage config
     GRAPH_BACKEND = os.environ.get("GRAPH_BACKEND", "kuzu").lower()

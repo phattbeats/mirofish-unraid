@@ -658,7 +658,6 @@ def get_simulation_profiles_realtime(simulation_id: str):
         }
     """
     import json
-    import csv
     from datetime import datetime
     
     try:
@@ -694,9 +693,7 @@ def get_simulation_profiles_realtime(simulation_id: str):
                     with open(profiles_file, 'r', encoding='utf-8') as f:
                         profiles = json.load(f)
                 else:
-                    with open(profiles_file, 'r', encoding='utf-8') as f:
-                        reader = csv.DictReader(f)
-                        profiles = list(reader)
+                    profiles = SimulationManager._load_twitter_profiles_csv(profiles_file)
             except (json.JSONDecodeError, Exception) as e:
                 logger.warning(f"Failed to read profiles file (possibly being written): {e}")
                 profiles = []

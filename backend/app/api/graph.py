@@ -241,9 +241,7 @@ def get_task(task_id: str):
 
 @graph_bp.route('/tasks', methods=['GET'])
 def list_tasks():
-    """
-    List all tasks
-    """
+    """List all tasks."""
     tasks = TaskManager().list_tasks()
     serialized_tasks = [task if isinstance(task, dict) else task.to_dict() for task in tasks]
 
