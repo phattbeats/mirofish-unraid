@@ -60,19 +60,4 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Build and push codex-proxy (multi-arch)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./codex-proxy/Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix=,format=short
-            type=raw,value=latest,enable={{is_default_branch}}
-          labels: |
-            org.opencontainers.image.title=MiroFish Codex Proxy
-            org.opencontainers.image.description=Codex proxy service for MiroFish
-            org.opencontainers.image.source=https://github.com/phattbeats/mirofish-unraid
+
