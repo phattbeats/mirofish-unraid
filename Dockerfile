@@ -3,7 +3,7 @@ FROM node:20-bookworm-slim AS frontend-build
 WORKDIR /app/frontend
 
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+RUN NODE_ENV=development npm ci
 
 COPY frontend/ ./
 ENV VITE_API_BASE_URL=
