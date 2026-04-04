@@ -39,12 +39,24 @@ jobs:
             type=sha,prefix=
             type=raw,value=latest
 
+      - name: Debug Docker environment
+        run: |
+          echo "=== Docker version ==="
+          docker version 2>&1 || echo "docker version FAILED"
+          echo ""
+          echo "=== Docker info ==="
+          docker info 2>&1 | head -20 || echo "docker info FAILED"
+          echo ""
+          echo "=== Buildx version ==="
+          docker buildx version 2>&1 || echo "buildx FAILED"
+          echo ""
+          echo "=== Buildx ls ==="
+          docker buildx ls 2>&1 || echo "buildx ls FAILED"
+          echo ""
+          echo "=== Listing ==="
+          ls -la
+
       - name: Build and push
         run: |
-          echo "Starting build..."
-          echo "Tags: ${{ steps.meta.outputs.tags }}"
-          docker buildx build \
-            --platform linux/amd64 \
-            --tag therealphatt/mirofish-unraid:latest \
-            --push \
-            . 2>&1
+          echo "=== Starting build ==="
+          docker buildx build --platform linux/amd64 --tag therealphatt/mirofish-unraid:debug --push . 2>&1
