@@ -44,19 +44,26 @@ jobs:
           echo "=== Docker version ==="
           docker version 2>&1 || echo "docker version FAILED"
           echo ""
-          echo "=== Docker info ==="
-          docker info 2>&1 | head -20 || echo "docker info FAILED"
-          echo ""
-          echo "=== Buildx version ==="
-          docker buildx version 2>&1 || echo "buildx FAILED"
-          echo ""
           echo "=== Buildx ls ==="
           docker buildx ls 2>&1 || echo "buildx ls FAILED"
           echo ""
           echo "=== Listing ==="
           ls -la
 
+      - name: Build test image
+        run: |
+          echo "=== Testing simple docker build ==="
+          docker build -t test:local -f Dockerfile . 2>&1 | tail -5
+          echo "exit: $?"
+
+      - name: Push test image
+        run: |
+          echo "=== Testing docker login + tag + push ==="
+          docker tag test:local therealphatt/mirofish-unraid:debug
+          docker push therealphatt/mirofish-unraid:debug 2>&1 | tail -10
+          echo "push exit: $?"
+
       - name: Build and push
         run: |
-          echo "=== Starting build ==="
+          echo "=== Starting full build ==="
           docker buildx build --platform linux/amd64 --tag therealphatt/mirofish-unraid:debug --push . 2>&1
