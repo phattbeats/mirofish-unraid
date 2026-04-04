@@ -56,11 +56,13 @@ jobs:
           docker build -t test:local -f Dockerfile . 2>&1 | tail -5
           echo "exit: $?"
 
-      - name: Push test image
+      - name: Push test image with explicit auth
         run: |
-          echo "=== Testing docker login + tag + push ==="
+          echo "=== Re-authing to DockerHub ==="
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u therealphatt --password-stdin
+          echo "=== Push test ==="
           docker tag test:local therealphatt/mirofish-unraid:debug
-          docker push therealphatt/mirofish-unraid:debug 2>&1 | tail -10
+          docker push therealphatt/mirofish-unraid:debug 2>&1
           echo "push exit: $?"
 
       - name: Build and push
