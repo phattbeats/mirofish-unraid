@@ -17,9 +17,6 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends nodejs npm \
   && rm -rf /var/lib/apt/lists/*
 
-# Copy uv from the official image for fast dependency installs.
-COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /uvx /bin/
-
 WORKDIR /app
 
 ENV PYTHONUNBUFFERED=1 \
@@ -29,7 +26,7 @@ ENV PYTHONUNBUFFERED=1 \
     FLASK_PORT=5001
 
 COPY backend/requirements.txt ./backend/requirements.txt
-RUN uv pip install --system -r backend/requirements.txt
+RUN pip install --no-cache-dir -r backend/requirements.txt
 
 COPY backend/ ./backend/
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
