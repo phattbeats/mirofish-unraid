@@ -43,5 +43,5 @@ jobs:
         run: |
           docker buildx build --platform linux/amd64 --load \
             --tag therealphatt/mirofish-unraid:test \
-            .
-          echo "exit: $?"
+            . 2>&1 | tee build.log
+          echo "exit: ${PIPESTATUS[0]}"
