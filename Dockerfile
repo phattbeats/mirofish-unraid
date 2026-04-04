@@ -13,8 +13,15 @@ RUN npm run build
 FROM python:3.11-slim
 
 # Runtime deps: node is kept for Claude/Codex CLI wrappers mounted from the host.
+# Build deps needed for kuzu, PyMuPDF (native extension modules)
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends nodejs npm \
+  && apt-get install -y --no-install-recommends \
+    nodejs npm \
+    build-essential \
+    cmake \
+    libgomp1 \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
