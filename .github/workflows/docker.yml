@@ -39,33 +39,9 @@ jobs:
             type=sha,prefix=
             type=raw,value=latest
 
-      - name: Debug Docker environment
-        run: |
-          echo "=== Docker version ==="
-          docker version 2>&1 || echo "docker version FAILED"
-          echo ""
-          echo "=== Buildx ls ==="
-          docker buildx ls 2>&1 || echo "buildx ls FAILED"
-          echo ""
-          echo "=== Listing ==="
-          ls -la
-
-      - name: Build test image
-        run: |
-          echo "=== Testing simple docker build ==="
-          docker build -t test:local -f Dockerfile . 2>&1 | tail -5
-          echo "exit: $?"
-
-      - name: Push test image with explicit auth
-        run: |
-          echo "=== Re-authing to DockerHub ==="
-          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u therealphatt --password-stdin
-          echo "=== Push test ==="
-          docker tag test:local therealphatt/mirofish-unraid:debug
-          docker push therealphatt/mirofish-unraid:debug 2>&1
-          echo "push exit: $?"
-
       - name: Build and push
         run: |
-          echo "=== Starting full build ==="
-          docker buildx build --platform linux/amd64 --tag therealphatt/mirofish-unraid:debug --push . 2>&1
+          docker buildx build --platform linux/amd64 --no-cache \
+            --tag therealphatt/mirofish-unraid:$(echo $GITHUB_SHA | cut -c1-7) \
+            --push .
+          echo "exit: $?"
