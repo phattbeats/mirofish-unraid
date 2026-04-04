@@ -6,9 +6,6 @@ on:
     tags: ["*"]
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-
 permissions:
   contents: read
 
@@ -43,12 +40,11 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64
-          load: true
+        run: |
+          echo "Starting build..."
+          echo "Tags: ${{ steps.meta.outputs.tags }}"
+          docker buildx build \
+            --platform linux/amd64 \
+            --tag therealphatt/mirofish-unraid:latest \
+            --push \
+            . 2>&1
