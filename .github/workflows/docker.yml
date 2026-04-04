@@ -39,10 +39,9 @@ jobs:
             type=sha,prefix=
             type=raw,value=latest
 
-      - name: Build and push
+      - name: Build (no push)
         run: |
-          set -x
-          docker buildx build --platform linux/amd64 \
-            --tag therealphatt/mirofish-unraid:$(echo $GITHUB_SHA | cut -c1-7) \
-            --push .
+          docker buildx build --platform linux/amd64 --load \
+            --tag therealphatt/mirofish-unraid:test \
+            .
           echo "exit: $?"
