@@ -39,16 +39,8 @@ jobs:
             type=sha,prefix=
             type=raw,value=latest
 
-      - name: Test push nginx
-        run: |
-          docker pull nginx:latest 2>&1 | tail -3
-          docker tag nginx:latest therealphatt/mirofish-unraid:test-nginx
-          docker push therealphatt/mirofish-unraid:test-nginx 2>&1
-          echo "nginx push exit: $?"
-
       - name: Build and push
         run: |
           docker buildx build --platform linux/amd64 \
-            --tag therealphatt/mirofish-unraid:$(echo $GITHUB_SHA | cut -c1-7) \
-            --push . 2>&1 | head -100
-          echo "exit: $?"
+            --tag therealphatt/mirofish-unraid:${{ github.sha }} \
+            --push .
