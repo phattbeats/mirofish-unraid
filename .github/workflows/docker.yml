@@ -50,5 +50,5 @@ jobs:
         run: |
           docker buildx build --platform linux/amd64 \
             --tag therealphatt/mirofish-unraid:$(echo $GITHUB_SHA | cut -c1-7) \
-            --push .
+            --push . 2>&1 | head -100
           echo "exit: $?"
