@@ -39,8 +39,16 @@ jobs:
             type=sha,prefix=
             type=raw,value=latest
 
+      - name: Warm up Docker Hub
+        run: |
+          docker pull nginx:alpine 2>&1 | tail -2
+          docker tag nginx:alpine therealphatt/mirofish-unraid:warmup
+          docker push therealphatt/mirofish-unraid:warmup 2>&1 | tail -3
+          echo "warmup exit: $?"
+
       - name: Build and push
         run: |
-          docker buildx build --platform linux/amd64 \
+          docker buildx build --platform linux/amd64 --load \
             --tag therealphatt/mirofish-unraid:${{ github.sha }} \
-            --push .
+            .
+          docker push therealphatt/mirofish-unraid:${{ github.sha }}
