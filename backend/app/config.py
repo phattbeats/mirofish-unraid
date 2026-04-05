@@ -103,8 +103,8 @@ class Config:
     ALLOWED_EXTENSIONS = {"pdf", "md", "txt", "markdown"}
 
     # Text processing config
-    DEFAULT_CHUNK_SIZE = 500
-    DEFAULT_CHUNK_OVERLAP = 50
+    DEFAULT_CHUNK_SIZE = 1500
+    DEFAULT_CHUNK_OVERLAP = 150
 
     # OASIS simulation config
     OASIS_DEFAULT_MAX_ROUNDS = int(os.environ.get("OASIS_DEFAULT_MAX_ROUNDS", "10"))

@@ -140,9 +140,22 @@ class LLMClient:
         if response_format:
             kwargs["response_format"] = response_format
 
-        response = self.client.chat.completions.create(**kwargs)
-        content = response.choices[0].message.content
-        return self._clean_content(content)
+        try:
+            response = self.client.chat.completions.create(**kwargs)
+            content = response.choices[0].message.content
+            if not content or content.strip() == "":
+                raise ValueError("Empty response content from LLM")
+            return self._clean_content(content)
+        except (ValueError, Exception) as e:
+            if response_format:
+                # Retry without response_format — some models burn tokens on json_object reasoning
+                kwargs_without = {k: v for k, v in kwargs.items() if k != "response_format"}
+                response = self.client.chat.completions.create(**kwargs_without)
+                content = response.choices[0].message.content
+                if not content or content.strip() == "":
+                    raise ValueError(f"LLM returned empty content even without response_format: {e}")
+                return self._clean_content(content)
+            raise
 
     def _chat_anthropic(
         self,
@@ -285,7 +298,7 @@ class LLMClient:
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.3,
-        max_tokens: int = 4096
+        max_tokens: int = 8192
     ) -> Dict[str, Any]:
         """
         Send a chat request and return JSON.

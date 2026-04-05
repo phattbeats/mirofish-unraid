@@ -111,7 +111,7 @@ Extract all entities and relationships from the text above that match the ontolo
                     {"role": "user", "content": user_message},
                 ],
                 temperature=0.2,
-                max_tokens=4096,
+                max_tokens=8192,
             )
 
             entities = result.get("entities", [])
@@ -121,7 +121,7 @@ Extract all entities and relationships from the text above that match the ontolo
             return {"entities": entities, "relationships": relationships}
 
         except Exception as e:
-            logger.warning(f"Entity extraction failed for chunk: {str(e)[:200]}")
+            logger.error(f"Entity extraction failed for chunk: {str(e)[:200]}")
             return {"entities": [], "relationships": []}
 
     def extract_batch(
