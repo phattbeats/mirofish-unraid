@@ -1,0 +1,45 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# PHATT Bridge — docker-compose.yml
+#
+# Two services sharing the same codebase and SQLite volume:
+#   - bridge: the sync engine (cron or --once)
+#   - web: the Express API + React UI
+#
+# Replace your existing docker-compose.yml with this, or merge the
+# 'web' service into your existing file.
+# ═══════════════════════════════════════════════════════════════════════════
+
+version: "3.8"
+
+services:
+  # ── Sync Engine ──────────────────────────────────────────────────────
+  bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: phatt-bridge
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - bridge-data:/app/data
+    command: ["node", "dist/index.js"]
+
+  # ── Web UI + API ────────────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: phatt-bridge-web
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - WEB_PORT=3100
+    ports:
+      - "3100:3100"
+    volumes:
+      - bridge-data:/app/data    # same SQLite DB as bridge
+    command: ["node", "dist/api/server.js"]
+
+volumes:
+  bridge-data:
+    name: phatt-bridge-data

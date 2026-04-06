@@ -9,13 +9,23 @@
     "dev": "concurrently --kill-others -n \"backend,frontend\" -c \"green,cyan\" \"npm run backend\" \"npm run frontend\"",
     "backend": "cd backend && uv run python run.py",
     "frontend": "cd frontend && npm run dev",
-    "build": "cd frontend && npm run build"
+    "build": "cd frontend && npm run build",
+    "web": "tsx src/api/server.ts",
+    "web:dev": "tsx watch src/api/server.ts",
+    "web:build": "cd web && npm run build && echo 'Web UI built'",
+    "web:setup": "cd web && npm install --include=dev"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
   },
   "engines": {
     "node": ">=18.0.0"
   },
-  "license": "AGPL-3.0"
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.22.1"
+  }
 }

@@ -1,0 +1,53 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# PHATT Bridge — Multi-Stage Dockerfile
+# Stage 1: Build React UI
+# Stage 2: Build bridge TypeScript
+# Stage 3: Production runtime
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── Stage 1: Build the React UI ──────────────────────────────────────────
+FROM node:20 AS web-builder
+WORKDIR /build/web
+COPY web/package.json web/package-lock.json* ./
+RUN npm ci
+COPY web/ ./
+RUN npm run build
+# Output: /build/web/dist/
+
+# ── Stage 2: Build the bridge TypeScript ─────────────────────────────────
+FROM node:20 AS bridge-builder
+WORKDIR /build/bridge
+COPY package.json package-lock.json* tsconfig.json ./
+RUN npm ci
+COPY src/ ./src/
+RUN npx tsc --outDir dist
+# Output: /build/bridge/dist/
+
+# ── Stage 3: Production runtime ──────────────────────────────────────────
+FROM node:20
+WORKDIR /app
+
+# Install production dependencies (includes better-sqlite3 native build)
+COPY package.json package-lock.json* ./
+RUN npm ci --production
+
+# Copy compiled bridge
+COPY --from=bridge-builder /build/bridge/dist/ ./dist/
+
+# Copy built React UI
+COPY --from=web-builder /build/web/dist/ ./web/dist/
+
+# Copy config files
+COPY .env.example ./
+
+# Create data directory for SQLite
+RUN mkdir -p data
+
+# The bridge entry point (sync engine)
+# The web server runs as a separate process or combined
+ENV WEB_PORT=3100
+EXPOSE 3100
+
+# Default: run the sync engine. Override to run the web server.
+# See docker-compose.yml for multi-service setup.
+CMD ["node", "dist/index.js"]
